@@ -8,7 +8,7 @@ Integrantes: [David Santiago Caraballo Candela](https://github.com/scaraballoc),
 
 En el presente repositorio se encuentran todos los documentos, bases de datos y códigos utilizados durante el desarrollo del Taller 3 de la clase *Big Data & Machine Learning for Applied Economics*, del profesor [Ignacio Sarmiento-Barbieri](https://ignaciomsarmiento.github.io/igaciomsarmiento) durante el segundo semestre del año 2022.
 
-Este trabajo tenía como objetivo el desarrollo de un modelo de predicción de precios de vivienda para determinar la factibilidad de adquirirla y monetizar a través de su remodelación y reventa, a partir del uso de una base de datos del 2021 del sitio web PROPERATI. Tal insumo, con la intención de mejorar el proceso de identificación de precios por debajo del umbral compra (COP $40.000.000). Se importa toda la *raw-database* de PROPERATI 2021 que contiene un total de 51.437 observaciones y 14 variables que resulta de compilar las viviendas de Bogotá D.C. y Medellín. 
+Este trabajo tenía como objetivo el desarrollo de un modelo de predicción de precios de vivienda para determinar la factibilidad de adquirirla y monetizar a través de su remodelación y reventa, a partir del uso de una base de datos del 2021 del sitio web PROPERATI. Tal insumo, con la intención de mejorar el proceso de identificación de precios por debajo del umbral de compra (<COP $40.000.000). Se importa toda la *raw-database* de PROPERATI 2021 que contiene un total de 51.437 observaciones y 14 variables que resulta de compilar las viviendas de Bogotá D.C. y Medellín. 
  
 **1. *Data cleaning & Modelling***
 
