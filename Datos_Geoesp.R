@@ -293,7 +293,7 @@ rest <- opq(bbox = getbb("Cali Colombia")) %>%
 mtxrs <- st_distance(x=Cali_D,y=rest)
 Cali_D$dist_rest <- apply(mtxrs,1,min)
 
-# 3.3.9 Schools
+# 3.3.10 Schools
 
 scho <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
   add_osm_feature(key = "amenity", value = "school") %>%
@@ -320,26 +320,119 @@ mtxsch <- st_distance(x=Cali_D,y=scho)
 Cali_D$dist_scho <- apply(mtxsch,1,min)
 
 
+# 3.3.11 Parks
+
+park <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+mtxpk <- st_distance(x=Bogota_DC,y=park)
+Bogota_DC$dist_park <- apply(mtxpk,1,mean)
+
+park <- opq(bbox = getbb("Medellín Colombia")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+mtxpk <- st_distance(x=Medellin_D,y=park)
+Medellin_D$dist_park <- apply(mtxpk,1,mean)
+
+park <- opq(bbox = getbb("Cali Colombia")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+mtxpk <- st_distance(x=Cali_D,y=park)
+Cali_D$dist_park <- apply(mtxpk,1,mean)
+
+# 3.3.12 Water
+
+water <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
+  add_osm_feature(key = "waterway", value=c("river","stream","canal")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxwt <- st_distance(x=Bogota_DC,y=water)
+Bogota_DC$dist_water <- apply(mtxwt,1,mean)
+
+water <- opq(bbox = getbb("Medellín Colombia")) %>%
+  add_osm_feature(key = "waterway", value=c("river","stream","canal")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxwt <- st_distance(x=Medellin_D,y=water)
+Medellin_D$dist_water <- apply(mtxwt,1,mean)
+
+water <- opq(bbox = getbb("Cali Colombia")) %>%
+  add_osm_feature(key = "waterway", value=c("river","stream","canal")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxwt <- st_distance(x=Cali_D,y=water)
+Cali_D$dist_water <- apply(mtxwt,1,mean)
 
 
+# 3.3.13 Roads
 
+road1 <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
+  add_osm_feature(key = "highway", value=c("trunk")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxrd1 <- st_distance(x=Bogota_DC,y=road1)
+tdist_rd1 <- apply(mtxrd1,1,mean)
 
+road2 <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
+  add_osm_feature(key = "highway", value=c("primary")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxrd2 <- st_distance(x=Bogota_DC,y=road2)
+tdist_rd2 <- apply(mtxrd2,1,mean)
+
+#road2 <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
+#  add_osm_feature(key = "highway", value=c("secondary")) %>%
+#  osmdata_sf() %>% .$osm_lines
+#mtxrd2 <- st_distance(x=Bogota_DC,y=road2)
+#tdist_rd2 <- apply(mtxrd2,1,mean)
+
+tdist_rd <- list()
+for (n in 1:37985){
+  tdist_rd[n] = 0.3*tdist_rd1[n] + 0.7*tdist_rd2[n]
+}
+tdist_rd <- as.data.frame(tdist_rd)
+tdist_rd <- t(tdist_rd)
+Bogota_DC$dist_road <- tdist_rd
+
+road1 <- opq(bbox = getbb("Medellín Colombia")) %>%
+  add_osm_feature(key = "highway", value=c("trunk","primary")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxrd1 <- st_distance(x=Medellin_D,y=road1)
+Medellin_D$dist_road <- apply(mtxrd1,1,mean)
+
+road1 <- opq(bbox = getbb("Cali Colombia")) %>%
+  add_osm_feature(key = "highway", value=c("trunk","primary")) %>%
+  osmdata_sf() %>% .$osm_lines
+mtxrd1 <- st_distance(x=Cali_D,y=road1)
+Cali_D$dist_road <- apply(mtxrd1,1,mean)
+
+# Juntar bases de datos
+
+geoprop2 <- rbind(Cali_D,Bogota_DC,Medellin_D)
+
+# Distance non-linealities
+
+geoprop2$dist_cent2 <- geoprop2$dist_cent^2
+geoprop2$dist_air2 <- geoprop2$dist_air^2
+geoprop2$dist_bus2 <- geoprop2$dist_bus^2
+geoprop2$dist_hosp2 <- geoprop2$dist_hosp^2
+geoprop2$dist_pol2 <- geoprop2$dist_pol^2
+geoprop2$dist_shop2 <- geoprop2$dist_shop^2
+geoprop2$dist_bar2 <- geoprop2$dist_bar^2
+geoprop2$dist_univ2 <- geoprop2$dist_univ^2
+geoprop2$dist_rest2 <- geoprop2$dist_rest^2
+geoprop2$dist_scho2 <- geoprop2$dist_scho^2
+geoprop2$dist_park2 <- geoprop2$dist_park^2
+geoprop2$dist_water2 <- geoprop2$dist_water^2
+geoprop2$dist_road2 <- geoprop2$dist_road^2
+
+# Export
+
+export(geoprop2,"datosgeoesp.rds")
+
+dbge <- readRDS("datosgeoesp.Rds")
 
 
 # Oldcode
-nm = c("Bogotá Distrito Capital - Municipio","Medellín Colombia","Cali Colombia")
+#nm = c("Bogotá Distrito Capital - Municipio","Medellín Colombia","Cali Colombia")
 
-for (vl in 1:3){
-  vps[[vl]] <- opq(bbox = getbb(nm[vl])) %>%
-    add_osm_feature(key = "highway", value=c("trunk","primary","secondary","tertiary")) %>%
-    osmdata_sf() %>% .$osm_lines
-  
-  wat[[vl]] <- opq(bbox = getbb(nm[vl])) %>%
-    add_osm_feature(key = "waterway", value=c("river","stream","canal")) %>%
-    osmdata_sf() %>% .$osm_lines
-  
-  park[[vl]] <- opq(bbox = getbb(nm[vl])) %>%
-    add_osm_feature(key = "leisure", value = "park") %>%
-    osmdata_sf() %>% .$osm_polygons
-  
-}
+#for (vl in 1:3){
+#  vps[[vl]] <- opq(bbox = getbb(nm[vl])) %>%
+#    add_osm_feature(key = "highway", value=c("trunk","primary","secondary","tertiary")) %>%
+#    osmdata_sf() %>% .$osm_lines
+#}
