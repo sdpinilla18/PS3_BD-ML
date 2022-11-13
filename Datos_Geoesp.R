@@ -401,11 +401,11 @@ road1 <- opq(bbox = getbb("Cali Colombia")) %>%
 mtxrd1 <- st_distance(x=Cali_D,y=road1)
 Cali_D$dist_road <- apply(mtxrd1,1,mean)
 
-# Juntar bases de datos
+## 4. Juntar bases de datos
 
 geoprop2 <- rbind(Cali_D,Bogota_DC,Medellin_D)
 
-# Distance non-linealities
+# 4.1 Distance non-linealities
 
 geoprop2$dist_cent2 <- geoprop2$dist_cent^2
 geoprop2$dist_air2 <- geoprop2$dist_air^2
@@ -421,11 +421,43 @@ geoprop2$dist_park2 <- geoprop2$dist_park^2
 geoprop2$dist_water2 <- geoprop2$dist_water^2
 geoprop2$dist_road2 <- geoprop2$dist_road^2
 
-# Export
+# 4.2 Export
 
 export(geoprop2,"datosgeoesp.rds")
 
 dbge <- readRDS("datosgeoesp.Rds")
+
+## 5. Imputación de missings por manzana mediante KNN
+
+missmnz_bo = sum(is.na(dbge$COD_DANE))/nrow(dbge)
+
+dbge2 <- st_drop_geometry(dbge)
+
+bymnz <- dbge2  %>% group_by(COD_DANE) %>% summarise(count=n())
+
+bymnz <- filter(bymnz,COD_DANE>0)
+
+mean(bymnz$count)
+
+median(bymnz$count) 
+
+# Dado que la manzana mediana posee dos de las propiedades que tenemos como objetivo,
+# La imputación por KNN será con un k=3
+
+dbge2$lat = geoprop$lat
+dbge2$lon = geoprop$lon
+
+imptdb <- select(dbge2,"property_id","med_H_NRO_CUARTOS","sum_HA_TOT_PER","med_V_TOT_HOG","med_VA1_ESTRATO","lat","lon")
+
+imptdb <- as.matrix.data.frame(imptdb)
+
+write.csv(imptdb,"imptdb.csv",row.names = FALSE)
+
+# EL proceso de imputacion se realizó en el archiv KNNImputer.ipynb
+
+imptdb <- read.csv("imptdb2.csv",header=TRUE)
+
+dbge3 <- left_join(dbge,imptdb,by = c("property_id"))
 
 
 # Oldcode
