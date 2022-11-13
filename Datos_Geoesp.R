@@ -453,18 +453,20 @@ imptdb <- as.matrix.data.frame(imptdb)
 
 write.csv(imptdb,"imptdb.csv",row.names = FALSE)
 
-# EL proceso de imputacion se realizó en el archiv KNNImputer.ipynb
+# EL proceso de imputacion se realizó en el archivo KNNImputer.ipynb
 
 imptdb <- read.csv("imptdb2.csv",header=TRUE)
 
 dbge3 <- left_join(dbge,imptdb,by = c("property_id"))
 
+export(dbge3,"datosgeoesp.rds")
 
-# Oldcode
-#nm = c("Bogotá Distrito Capital - Municipio","Medellín Colombia","Cali Colombia")
+write.csv(dbge3,"datosgeoesp.csv",row.names = FALSE)
 
-#for (vl in 1:3){
-#  vps[[vl]] <- opq(bbox = getbb(nm[vl])) %>%
-#    add_osm_feature(key = "highway", value=c("trunk","primary","secondary","tertiary")) %>%
-#    osmdata_sf() %>% .$osm_lines
-#}
+## 6. Estadisticas descriptivas
+
+amenities_sum <- dbge3 %>% group_by(city) %>% summarise(dcent=mean(dist_cent),dair=mean(dist_air),dbus=mean(dist_bus),dhosp=mean(dist_hosp),dpol=mean(dist_pol),dshop=mean(dist_shop),dbar=mean(dist_bar),duniv=mean(dist_univ),drest=mean(dist_rest),dschool=mean(dist_scho),dpark=mean(dist_park),dwater=mean(dist_water),droad=mean(dist_road))
+
+amenities_sum = t(amenities_sum)
+
+
