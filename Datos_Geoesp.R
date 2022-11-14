@@ -427,6 +427,8 @@ export(geoprop2,"datosgeoesp.rds")
 
 dbge <- readRDS("datosgeoesp.Rds")
 
+
+
 ## 5. Imputación de missings por manzana mediante KNN
 
 missmnz_bo = sum(is.na(dbge$COD_DANE))/nrow(dbge)
@@ -463,10 +465,51 @@ export(dbge3,"datosgeoesp.rds")
 
 write.csv(dbge3,"datosgeoesp.csv",row.names = FALSE)
 
+
+# 5.2 Export, try again
+
+dbge_clean <- dbge3 %>% select('property_id', 'city',  'med_H_NRO_CUARTOS', 'sum_HA_TOT_PER', 'med_V_TOT_HOG',
+                         'med_VA1_ESTRATO', 'dist_cent', 'dist_air', 'dist_bus', 'dist_hosp',
+                         'dist_pol', 'dist_shop', 'dist_bar', 'dist_univ', 'dist_rest',
+                         'dist_scho', 'dist_park', 'dist_water', 'dist_road', 'dist_cent2',
+                         'dist_air2', 'dist_bus2', 'dist_hosp2', 'dist_pol2', 'dist_shop2',
+                         'dist_bar2', 'dist_univ2', 'dist_rest2', 'dist_scho2', 'dist_park2',
+                         'dist_water2', 'dist_road2', 'med_H_Cuar_KNN', 'sum_TOT_Per_KNN',
+                         'med_TOT_Hog_KNN', 'med_Estrato')
+
+write.csv(dbge_clean,"datosgeoesp2.csv",row.names = FALSE)
+
 ## 6. Estadisticas descriptivas
 
 amenities_sum <- dbge3 %>% group_by(city) %>% summarise(dcent=mean(dist_cent),dair=mean(dist_air),dbus=mean(dist_bus),dhosp=mean(dist_hosp),dpol=mean(dist_pol),dshop=mean(dist_shop),dbar=mean(dist_bar),duniv=mean(dist_univ),drest=mean(dist_rest),dschool=mean(dist_scho),dpark=mean(dist_park),dwater=mean(dist_water),droad=mean(dist_road))
 
 amenities_sum = t(amenities_sum)
+
+amenities_summd <- dbge3 %>% group_by(city) %>% summarise(dcent=median(dist_cent),dair=median(dist_air),dbus=median(dist_bus),dhosp=median(dist_hosp),dpol=median(dist_pol),dshop=median(dist_shop),dbar=median(dist_bar),duniv=median(dist_univ),drest=median(dist_rest),dschool=median(dist_scho),dpark=median(dist_park),dwater=median(dist_water),droad=median(dist_road))
+
+amenities_summd = t(amenities_summd)
+
+
+dbge3$med_H_Cuar_KNN <- round(dbge3$med_H_Cuar_KNN, digits = 0)
+dbge3$sum_TOT_Per_KNN <- round(dbge3$sum_TOT_Per_KNN, digits = 0)
+dbge3$med_TOT_Hog_KNN <- round(dbge3$med_TOT_Hog_KNN, digits = 0)
+dbge3$med_Estrato <- round(dbge3$med_Estrato, digits = 0)
+
+
+demeco_sum <- dbge3 %>% group_by(city) %>% summarise(mdCuar=median(med_H_Cuar_KNN),mdPer=median(sum_TOT_Per_KNN),mdHog=median(med_TOT_Hog_KNN),mdEst=median(med_Estrato))
+
+demeco_sum = t(demeco_sum)
+
+## 7. Mapas
+
+# 7.1 Distancia al transporte publico
+
+fin_bog <- filter(dbge3,city=="Bogotá D.C")
+
+
+ggplot(data=fin_bog)+geom_sf(mapping=aes(fill=dist_bus), size=1, col="Blue")
+
+
+
 
 
