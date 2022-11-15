@@ -428,7 +428,6 @@ export(geoprop2,"datosgeoesp.rds")
 dbge <- readRDS("datosgeoesp.Rds")
 
 
-
 ## 5. Imputación de missings por manzana mediante KNN
 
 missmnz_bo = sum(is.na(dbge$COD_DANE))/nrow(dbge)
@@ -461,10 +460,14 @@ imptdb <- read.csv("imptdb2.csv",header=TRUE)
 
 dbge3 <- left_join(dbge,imptdb,by = c("property_id"))
 
+dbge3$med_H_Cuar_KNN <- round(dbge3$med_H_Cuar_KNN, digits = 0)
+dbge3$sum_TOT_Per_KNN <- round(dbge3$sum_TOT_Per_KNN, digits = 0)
+dbge3$med_TOT_Hog_KNN <- round(dbge3$med_TOT_Hog_KNN, digits = 0)
+dbge3$med_Estrato <- round(dbge3$med_Estrato, digits = 0)
+
 export(dbge3,"datosgeoesp.rds")
 
 write.csv(dbge3,"datosgeoesp.csv",row.names = FALSE)
-
 
 # 5.2 Export, try again
 
@@ -479,6 +482,9 @@ dbge_clean <- dbge3 %>% select('property_id', 'city',  'med_H_NRO_CUARTOS', 'sum
 
 write.csv(dbge_clean,"datosgeoesp2.csv",row.names = FALSE)
 
+dbge_clean <- read.csv("datosgeoesp2.csv")
+
+
 ## 6. Estadisticas descriptivas
 
 amenities_sum <- dbge3 %>% group_by(city) %>% summarise(dcent=mean(dist_cent),dair=mean(dist_air),dbus=mean(dist_bus),dhosp=mean(dist_hosp),dpol=mean(dist_pol),dshop=mean(dist_shop),dbar=mean(dist_bar),duniv=mean(dist_univ),drest=mean(dist_rest),dschool=mean(dist_scho),dpark=mean(dist_park),dwater=mean(dist_water),droad=mean(dist_road))
@@ -488,12 +494,6 @@ amenities_sum = t(amenities_sum)
 amenities_summd <- dbge3 %>% group_by(city) %>% summarise(dcent=median(dist_cent),dair=median(dist_air),dbus=median(dist_bus),dhosp=median(dist_hosp),dpol=median(dist_pol),dshop=median(dist_shop),dbar=median(dist_bar),duniv=median(dist_univ),drest=median(dist_rest),dschool=median(dist_scho),dpark=median(dist_park),dwater=median(dist_water),droad=median(dist_road))
 
 amenities_summd = t(amenities_summd)
-
-
-dbge3$med_H_Cuar_KNN <- round(dbge3$med_H_Cuar_KNN, digits = 0)
-dbge3$sum_TOT_Per_KNN <- round(dbge3$sum_TOT_Per_KNN, digits = 0)
-dbge3$med_TOT_Hog_KNN <- round(dbge3$med_TOT_Hog_KNN, digits = 0)
-dbge3$med_Estrato <- round(dbge3$med_Estrato, digits = 0)
 
 
 demeco_sum <- dbge3 %>% group_by(city) %>% summarise(mdCuar=median(med_H_Cuar_KNN),mdPer=median(sum_TOT_Per_KNN),mdHog=median(med_TOT_Hog_KNN),mdEst=median(med_Estrato))
@@ -506,10 +506,242 @@ demeco_sum = t(demeco_sum)
 
 fin_bog <- filter(dbge3,city=="Bogotá D.C")
 
+UPZ = opq(bbox = getbb(place_name = "Bogotá Colombia",
+                           featuretype = "boundary:administrative",
+                           format_out = "sf_polygon")) %>%
+  add_osm_feature(key = "admin_level", value = "9") %>%
+  osmdata_sf()  %>% .$osm_multipolygons
 
-ggplot(data=fin_bog)+geom_sf(mapping=aes(fill=dist_bus), size=1, col="Blue")
+UPZ = UPZ %>% subset(str_detect(ref,"")) 
+UPZ = st_cast(UPZ,"POLYGON") 
+
+
+bs_bog <- ggplot(data=fin_bog) + geom_sf(data=UPZ,fill=NA,color = "black") +
+                       geom_sf(data=fin_bog,aes(color=dist_bus),size=0.5,shape=0) +
+                       scale_color_gradient(low="darkred",high="brown1",name="Minima distancia a estación de Bus (mt)") +
+                       #scale_alpha()
+                       geom_sf(data=cent_bog,fill=NA,color="black",size=3) +
+                       theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+                       #theme_bw() +
+                       north(data=UPZ , location="topleft") + 
+                       scalebar(data=UPZ , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+                       labs(x = NULL, y = NULL)
+
+bs_bog
+
+ggsave("BS_Distance_Bog.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+fin_med <- filter(dbge3,city=="Medellín")
+
+ComMed = opq(bbox = getbb(place_name = "Medellín Colombia",
+                       featuretype = "boundary:administrative",
+                       format_out = "sf_polygon")) %>%
+  add_osm_feature(key = "admin_level", value = "8") %>%
+  osmdata_sf()  %>% .$osm_multipolygons
+
+#ComMed = ComMed %>% subset(str_detect(ref,"")) 
+ComMed = st_cast(ComMed,"POLYGON")
+
+bs_med <- ggplot(data=fin_med) + geom_sf(data=ComMed,fill=NA,color = "black") +
+                       geom_sf(data=fin_med,aes(color=dist_bus),size=0.5,shape=0) +
+                       scale_color_gradient(low="darkred",high="brown1",name="Minima distancia a estación de Bus (mt)") +
+                       #scale_alpha()
+                       geom_sf(data=cent_med,fill=NA,color="black",size=3) +
+                       theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+                       #theme_bw() +
+                       north(data=ComMed , location="topleft") + 
+                       scalebar(data=ComMed , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) +
+                       labs(x = NULL, y = NULL)
+
+bs_med
+
+ggsave("BS_Distance_Med.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+fin_Cali <- filter(dbge3,city=="Cali")
+
+ComCal = opq(bbox = getbb(place_name = "Cali Colombia",
+                          featuretype = "boundary:administrative",
+                          format_out = "sf_polygon")) %>%
+  add_osm_feature(key = "admin_level", value = "8") %>%
+  osmdata_sf()  %>% .$osm_multipolygons
+
+#ComMed = ComMed %>% subset(str_detect(ref,"")) 
+ComCal = st_cast(ComCal,"POLYGON")
+
+bs_cal <- ggplot(data=fin_Cali) + geom_sf(data=ComCal,fill=NA,color = "black") +
+  geom_sf(data=fin_Cali,aes(color=dist_bus),size=0.5,shape=0) +
+  scale_color_gradient(low="darkred",high="brown1",name="Minima distancia a estación de Bus (mt)") +
+  #scale_alpha()
+  geom_sf(data=cent_cal,fill=NA,color="black",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=ComCal , location="topleft") + 
+  scalebar(data=ComCal , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) +
+  labs(x = NULL, y = NULL)
+
+bs_cal
+
+ggsave("BS_Distance_Cal.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+library(ggplot2)
+library(ggpubr)
+
+dist_bs <- ggarrange(bs_bog, bs_med, bs_cal,
+                    labels = c("Bogotá D.C", "Medellín", "Cali"),
+                    ncol = 3, nrow = 1)
+dist_bs
+
+ggsave("BS_Distance.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+# 7.2 Distancia a tiendas y centros comerciales
+
+
+sh_bog <- ggplot(data=fin_bog) + geom_sf(data=UPZ,fill=NA,color = "black") +
+  geom_sf(data=fin_bog,aes(color=dist_shop),size=0.5,shape=0) +
+  scale_color_gradient(low="darkgoldenrod4",high="bisque1",name="Minima distancia a Tiendas o C.C. (mt)") +
+  #scale_alpha()
+  geom_sf(data=cent_bog,fill=NA,color="black",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=UPZ , location="topleft") + 
+  scalebar(data=UPZ , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL)
+
+sh_bog
+
+ggsave("SH_Distance_Bog.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+sh_med <- ggplot(data=fin_med) + geom_sf(data=ComMed,fill=NA,color = "black") +
+  geom_sf(data=fin_med,aes(color=dist_shop),size=0.5,shape=0) +
+  scale_color_gradient(low="darkgoldenrod4",high="bisque1",name="Minima distancia a Tiendas o C.C. (mt)") +
+  #scale_alpha()
+  geom_sf(data=cent_med,fill=NA,color="black",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=ComMed , location="topleft") + 
+  scalebar(data=ComMed , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL)
+
+sh_med
+
+ggsave("SH_Distance_Med.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+sh_cal <- ggplot(data=fin_Cali) + geom_sf(data=ComCal,fill=NA,color = "black") +
+  geom_sf(data=fin_Cali,aes(color=dist_shop),size=0.5,shape=0) +
+  scale_color_gradient(low="darkgoldenrod4",high="bisque1",name="Minima distancia a Tiendas o C.C. (mt)") +
+  #scale_alpha()
+  geom_sf(data=cent_cal,fill=NA,color="black",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=ComCal , location="topleft") + 
+  scalebar(data=ComCal , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL)
+
+sh_cal
+
+ggsave("SH_Distance_Cal.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+dist_sh <- ggarrange(sh_bog, sh_med, sh_cal,
+                     labels = c("Bogotá D.C", "Medellín", "Cali"),
+                     ncol = 3, nrow = 1)
+dist_sh
+
+ggsave("SH_Distance.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
 
 
 
+# 7.3 Distancia a parques
+
+park_bog <- opq(bbox = getbb("Bogotá Colombia")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+
+pk_bog <- ggplot(data=fin_bog) + geom_sf(data=UPZ,fill=NA,color = "black") +
+  #geom_sf(data=fin_bog,aes(color=dist_park),size=0.5,shape=0) +
+  #scale_color_gradient(low="darkgreen",high="chartreuse",name="Distancia promedio a parques (mt)") +
+  geom_sf(data=park_bog,fill="chartreuse3",color="chartreuse3") +
+  #scale_alpha()
+  geom_sf(data=cent_bog,color="darkblue",size=3) +
+  theme(panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=UPZ , location="topleft") + 
+  scalebar(data=UPZ , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL) +
+  ggtitle("Parques en Bogotá")
+
+pk_bog
+
+ggsave("PK_Bog.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+park_med <- opq(bbox = getbb("Perímetro Urbano Medellín")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+
+pk_med <- ggplot(data=fin_med) + geom_sf(data=ComMed,fill=NA,color = "black") +
+  #geom_sf(data=fin_med,aes(color=dist_park),size=0.5,shape=0) +
+  #scale_color_gradient(low="darkgreen",high="chartreuse",name="Distancia promedio a parques (mt)") +
+  geom_sf(data=park_med,fill="chartreuse3",color="chartreuse3") +
+  #scale_alpha()
+  geom_sf(data=cent_med,fill=NA,color="darkblue",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=ComMed , location="topleft") + 
+  scalebar(data=ComMed , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL) +
+  ggtitle("Parques en Medellín")
+
+pk_med
+
+ggsave("PK_Med.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+
+park_cal <- opq(bbox = getbb("Perímetro Urbano Santiago de Cali")) %>%
+  add_osm_feature(key = "leisure", value = "park") %>%
+  osmdata_sf() %>% .$osm_polygons
+
+pk_cal <- ggplot(data=fin_Cali) + geom_sf(data=ComCal,fill=NA,color = "black") +
+  #geom_sf(data=fin_med,aes(color=dist_park),size=0.5,shape=0) +
+  #scale_color_gradient(low="darkgreen",high="chartreuse",name="Distancia promedio a parques (mt)") +
+  geom_sf(data=park_cal,fill="chartreuse3",color="chartreuse3") +
+  #scale_alpha()
+  geom_sf(data=cent_cal,fill=NA,color="darkblue",size=3) +
+  theme(legend.position="bottom",legend.text = element_text(size = 6),panel.background = element_rect(fill = "white"),panel.grid.major = element_line(color = "lightgray", size = 0.2),panel.border = element_rect(fill=NA,colour = "black")) +
+  #theme_bw() +
+  north(data=ComCal , location="topleft") + 
+  scalebar(data=ComCal , location="bottomleft" , dist=2 , dist_unit="km" , transform=T, model="WGS84", st.size = 2.5) + 
+  labs(x = NULL, y = NULL) +
+  ggtitle("Parques en Cali")
+
+pk_cal
+
+ggsave("PK_Cal.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
+
+
+
+parks <- ggarrange(pk_bog, pk_med, pk_cal,
+                     labels = c("Bogotá D.C", "Medellín", "Cali"),
+                     ncol = 3, nrow = 1)
+parks
+
+ggsave("PK.jpeg", plot=last_plot(), device = "jpeg", 
+       scale = 1, dpi = "print", limitsize = T, bg = NULL)
 
 
