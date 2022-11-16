@@ -1,11 +1,16 @@
 #------------------------------------------------------------------------------#
 # BD&MLfAE, PS3
-# 8 de noviembre de 2022
+# 14 de noviembre de 2022
 # R version 4.1.2
+# 
+# David Santiago Caraballo Candela, 201813007
+# Sergio David Pinilla Padilla, 201814755
+# Juan Diego Valencia Romero, 201815561
 #
-# David Santiago Caraballo Candela,
-# Sergio David Pinilla Padilla,
-# Juan Diego Valencia Romero,
+# Nota: Principal codigo utilizado durante el PS3 para extracción y analisis
+# de datos geoespaciales. Esta complementado por Prepare_Censo.R para la 
+# extracción de datos a nivel de manzanas, y por KNNImputer.ipynb o por 
+# KNNImputer.py para la imputación de missings en los datos a nivel de manzana.
 #------------------------------------------------------------------------------#
 
 
@@ -18,6 +23,7 @@ Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
 # 0.2 Importar paquetes
 require(pacman)
 p_load(tidyverse,rio,skimr,sf,leaflet,tmaptools,ggsn,osmdata,viridis,gstat,nngeo,spdep)
+
 
 ## 1. Importar bases de datos
 
@@ -61,7 +67,6 @@ leaflet() %>% addTiles() %>% addPolygons(data=Cali)
 
 ## 3. Datos OSM por hogar
 
-
 # 3.1 Centroids
 
 city <- c("Bog","Med","Cal")
@@ -82,6 +87,9 @@ cent[[3]] <- filter(centgeo,city=="Cal")
 
 # 3.2 Manzanas
 
+# Los datos a nivel de manzanas se pueden encontrar en 
+# https://geoportal.dane.gov.co/servicios/descarga-y-metadatos/descarga-mgn-marco-geoestadistico-nacional/
+
 mnz <- st_read("MNZ/MGN_URB_MANZANA.shp")
 
 mnz <- st_transform(mnz,crs=4326)
@@ -89,6 +97,9 @@ mnz <- st_transform(mnz,crs=4326)
 mnz <- filter(mnz, COD_MPIO %in% c("05001","11001","76001") )
 
 geoprop1 <- st_join(geoprop1,mnz)
+
+# Los datos de mnzdata_censo_2018.Rds fueron preparados utilizando el codigo 
+# Prepare_Censo.R
 
 mnz_data <- readRDS("mnzdata_censo_2018.Rds") 
 
@@ -319,7 +330,6 @@ scho <- opq(bbox = getbb("Cali Colombia")) %>%
 mtxsch <- st_distance(x=Cali_D,y=scho)
 Cali_D$dist_scho <- apply(mtxsch,1,min)
 
-
 # 3.3.11 Parks
 
 park <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
@@ -360,7 +370,6 @@ water <- opq(bbox = getbb("Cali Colombia")) %>%
 mtxwt <- st_distance(x=Cali_D,y=water)
 Cali_D$dist_water <- apply(mtxwt,1,mean)
 
-
 # 3.3.13 Roads
 
 road1 <- opq(bbox = getbb("Bogotá Distrito Capital - Municipio")) %>%
@@ -400,6 +409,7 @@ road1 <- opq(bbox = getbb("Cali Colombia")) %>%
   osmdata_sf() %>% .$osm_lines
 mtxrd1 <- st_distance(x=Cali_D,y=road1)
 Cali_D$dist_road <- apply(mtxrd1,1,mean)
+
 
 ## 4. Juntar bases de datos
 
@@ -443,7 +453,7 @@ mean(bymnz$count)
 median(bymnz$count) 
 
 # Dado que la manzana mediana posee dos de las propiedades que tenemos como objetivo,
-# La imputación por KNN será con un k=3
+# la imputación por KNN será con un k=3.
 
 dbge2$lat = geoprop$lat
 dbge2$lon = geoprop$lon
@@ -454,7 +464,8 @@ imptdb <- as.matrix.data.frame(imptdb)
 
 write.csv(imptdb,"imptdb.csv",row.names = FALSE)
 
-# EL proceso de imputacion se realizó en el archivo KNNImputer.ipynb
+# EL proceso de imputacion se realizó en el archivo KNNImputer.ipynb o
+# se puede revisar su analogo KNNImputer.py
 
 imptdb <- read.csv("imptdb2.csv",header=TRUE)
 
@@ -499,6 +510,7 @@ amenities_summd = t(amenities_summd)
 demeco_sum <- dbge3 %>% group_by(city) %>% summarise(mdCuar=median(med_H_Cuar_KNN),mdPer=median(sum_TOT_Per_KNN),mdHog=median(med_TOT_Hog_KNN),mdEst=median(med_Estrato))
 
 demeco_sum = t(demeco_sum)
+
 
 ## 7. Mapas
 
@@ -601,7 +613,6 @@ ggsave("BS_Distance.jpeg", plot=last_plot(), device = "jpeg",
 
 # 7.2 Distancia a tiendas y centros comerciales
 
-
 sh_bog <- ggplot(data=fin_bog) + geom_sf(data=UPZ,fill=NA,color = "black") +
   geom_sf(data=fin_bog,aes(color=dist_shop),size=0.5,shape=0) +
   scale_color_gradient(low="darkgoldenrod4",high="bisque1",name="Minima distancia a Tiendas o C.C. (mt)") +
@@ -660,8 +671,6 @@ dist_sh
 
 ggsave("SH_Distance.jpeg", plot=last_plot(), device = "jpeg", 
        scale = 1, dpi = "print", limitsize = T, bg = NULL)
-
-
 
 # 7.3 Distancia a parques
 

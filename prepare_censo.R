@@ -1,9 +1,23 @@
+#------------------------------------------------------------------------------#
+# BD&MLfAE, PS3
+# 14 de noviembre de 2022
+# R version 4.1.2
+# 
+# David Santiago Caraballo Candela, 201813007
+# Sergio David Pinilla Padilla, 201814755
+# Juan Diego Valencia Romero, 201815561
+#
+# Nota: Codigo complementario de Datos_Geoesp.R, el codigo base para el manejo
+# de datos a nivel de manzana fue desarrollado por Eduard Martinez y Lucas Gomez,
+# y se encuentra en https://bloqueneon.uniandes.edu.co/content/enforced/138407-UN_202220_ECON_4005/11_vecinos_espaciales.html?ou=138407&d2l_body_type=3#[3]_Vecinos_espaciales
+#------------------------------------------------------------------------------#
 
 ## load packages
 require(pacman) 
 p_load(tidyverse,rio)
 
-## censo data
+# Los datos para cada una de las ciudades (Bogotá, Medellín y Cali) se pueden 
+# descargar en el siguiente link
 browseURL("https://microdatos.dane.gov.co//catalog/643/get_microdata")
 
 ##=== variables ===##
